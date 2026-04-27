@@ -1758,14 +1758,70 @@ export default function App() {
           })()}
 
           {page === 'my-events' && (user.role === 'organizer' || user.role === 'admin') && (
-            <Grid container spacing={2}>
-              {organizerEvents.map((ev) => (
-                <Grid item xs={12} md={6} xl={4} key={ev.id}>
-                  <EventCard event={ev} onOpen={() => openEvent(ev.id)} />
-                </Grid>
-              ))}
-              {!organizerEvents.length && <Typography color="text.secondary">No events created yet.</Typography>}
-            </Grid>
+            <Stack spacing={3}>
+              {/* ─── My Events Hero Banner ─── */}
+              <Box
+                sx={{
+                  borderRadius: '22px',
+                  overflow: 'hidden',
+                  p: { xs: 3, sm: 4 },
+                  background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 45%, #0b3954 75%, #005f73 100%)',
+                  color: '#fff',
+                  position: 'relative',
+                  minHeight: 140,
+                }}
+              >
+                <Box sx={{ position: 'absolute', top: -50, right: -50, width: 220, height: 220, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+                <Box sx={{ position: 'absolute', bottom: -30, left: '30%', width: 160, height: 160, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.03)' }} />
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ md: 'center' }} spacing={2} sx={{ position: 'relative', zIndex: 1 }}>
+                  <Box>
+                    <Typography variant="h3" sx={{ fontSize: { xs: '1.8rem', sm: '2.2rem' }, mb: 0.5 }}>
+                      📋 My Events
+                    </Typography>
+                    <Typography variant="body1" sx={{ opacity: 0.8, maxWidth: 480 }}>
+                      Manage your events, track registrations, and monitor feedback — all in one place.
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+                    {[
+                      { label: 'Total', value: organizerEvents.length, color: 'rgba(59,130,246,0.25)' },
+                      { label: 'Upcoming', value: organizerEvents.filter(e => e.status === 'upcoming').length, color: 'rgba(16,185,129,0.25)' },
+                      { label: 'Past', value: organizerEvents.filter(e => e.status !== 'upcoming').length, color: 'rgba(168,85,247,0.25)' },
+                      { label: 'Registrations', value: organizerEvents.reduce((sum, e) => sum + (e.registered_count || 0), 0), color: 'rgba(245,158,11,0.25)' },
+                    ].map(stat => (
+                      <Paper key={stat.label} sx={{ bgcolor: stat.color, backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', px: 2, py: 1.2, borderRadius: '14px', textAlign: 'center', minWidth: 80 }}>
+                        <Typography variant="h5" sx={{ color: '#fff', fontWeight: 800 }}>{stat.value}</Typography>
+                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.65rem' }}>{stat.label}</Typography>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Stack>
+              </Box>
+
+              {/* ─── Event Cards Grid ─── */}
+              {organizerEvents.length > 0 ? (
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 2.5 }}>
+                  {organizerEvents.map((ev) => (
+                    <Box key={ev.id} sx={{ animation: 'fadeInUp 0.4s ease forwards', '@keyframes fadeInUp': { from: { opacity: 0, transform: 'translateY(16px)' }, to: { opacity: 1, transform: 'translateY(0)' } } }}>
+                      <EventCard event={ev} onOpen={() => openEvent(ev.id)} />
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Card sx={{ border: '1px solid rgba(20, 47, 86, 0.08)', textAlign: 'center', py: 8 }}>
+                  <CardContent>
+                    <Typography variant="h1" sx={{ fontSize: '4rem', mb: 1 }}>🚀</Typography>
+                    <Typography variant="h5" sx={{ mb: 1 }}>Create your first event!</Typography>
+                    <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 440, mx: 'auto' }}>
+                      You haven't created any events yet. Start organizing campus activities and watch your community grow.
+                    </Typography>
+                    <Button variant="contained" onClick={() => setPage('create-event')} startIcon={<AddCircleOutlineRoundedIcon />}>
+                      Create Event
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </Stack>
           )}
 
           {page === 'manage-users' && user.role === 'admin' && (
@@ -1799,25 +1855,171 @@ export default function App() {
           )}
 
           {page === 'create-announcement' && user.role === 'admin' && (
-            <Card sx={{ border: '1px solid rgba(20, 47, 86, 0.08)', maxWidth: 860 }}>
-              <CardContent>
-                <Typography variant="h5" sx={{ mb: 2 }}>Post Announcement</Typography>
-                <Stack spacing={2}>
-                  <TextField label="Title" value={announcementForm.title} onChange={(e) => setAnnouncementForm((p) => ({ ...p, title: e.target.value }))} fullWidth />
-                  <TextField label="Message" value={announcementForm.message} onChange={(e) => setAnnouncementForm((p) => ({ ...p, message: e.target.value }))} multiline minRows={4} fullWidth />
-                  <FormControl fullWidth>
-                    <InputLabel>Priority</InputLabel>
-                    <Select label="Priority" value={announcementForm.priority} onChange={(e) => setAnnouncementForm((p) => ({ ...p, priority: e.target.value }))}>
-                      <MenuItem value="low">Low</MenuItem>
-                      <MenuItem value="normal">Normal</MenuItem>
-                      <MenuItem value="high">High</MenuItem>
-                      <MenuItem value="urgent">Urgent</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Button variant="contained" onClick={createAnnouncement}>Post Announcement</Button>
-                </Stack>
-              </CardContent>
-            </Card>
+            <Box sx={{ maxWidth: 880, mx: 'auto' }}>
+              <Stack spacing={3}>
+                {/* ─── Hero Header ─── */}
+                <Box
+                  sx={{
+                    position: 'relative',
+                    borderRadius: '22px',
+                    overflow: 'hidden',
+                    p: { xs: 3, sm: 4 },
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4c1d95 60%, #0f172a 100%)',
+                    color: '#fff',
+                    minHeight: 160,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {/* Decorative elements */}
+                  <Box sx={{ position: 'absolute', top: -30, right: -20, width: 220, height: 220, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.06)' }} />
+                  <Box sx={{ position: 'absolute', bottom: -50, right: '20%', width: 140, height: 140, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+                  
+                  <Stack direction="row" alignItems="center" spacing={2} sx={{ position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ 
+                      p: 1.5, 
+                      borderRadius: '16px', 
+                      background: 'rgba(255,255,255,0.1)', 
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.2)'
+                    }}>
+                      <CampaignRoundedIcon sx={{ fontSize: 40, color: '#fff' }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontSize: { xs: '1.8rem', sm: '2.2rem' }, mb: 0.5, fontWeight: 800 }}>
+                        Post Announcement
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.85, maxWidth: 500 }}>
+                        Broadcast important updates, schedule changes, or urgent news to all campus students.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+
+                {/* ─── Form Card ─── */}
+                <Card sx={{
+                  border: '1px solid rgba(20, 47, 86, 0.08)',
+                  position: 'relative',
+                  overflow: 'visible',
+                  borderRadius: '20px',
+                  '&::before': {
+                    content: '"📢"',
+                    position: 'absolute',
+                    top: -16,
+                    left: 32,
+                    width: 40,
+                    height: 40,
+                    bgcolor: '#fff',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '22px',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+                    border: '1px solid rgba(20,47,86,0.06)',
+                  },
+                }}>
+                  <CardContent sx={{ p: { xs: 3, sm: 4 }, pt: { xs: 4, sm: 5 } }}>
+                    <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>Announcement Details</Typography>
+                    
+                    <Stack spacing={3}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#1e293b' }}>Title</Typography>
+                        <TextField 
+                          fullWidth
+                          placeholder="e.g. Library Closed for Maintenance Tomorrow" 
+                          value={announcementForm.title} 
+                          onChange={(e) => setAnnouncementForm((p) => ({ ...p, title: e.target.value }))}
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: 'rgba(0,0,0,0.02)' } }}
+                        />
+                      </Box>
+                      
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#1e293b' }}>Message Content</Typography>
+                        <TextField 
+                          fullWidth
+                          multiline 
+                          minRows={4} 
+                          placeholder="Provide all the necessary details regarding this announcement..."
+                          value={announcementForm.message} 
+                          onChange={(e) => setAnnouncementForm((p) => ({ ...p, message: e.target.value }))} 
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: 'rgba(0,0,0,0.02)' } }}
+                        />
+                      </Box>
+                      
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#1e293b' }}>Priority Level</Typography>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                          <FormControl sx={{ flex: 1, width: '100%' }}>
+                            <Select 
+                              value={announcementForm.priority} 
+                              onChange={(e) => setAnnouncementForm((p) => ({ ...p, priority: e.target.value }))}
+                              sx={{ borderRadius: '12px', bgcolor: 'rgba(0,0,0,0.02)' }}
+                            >
+                              <MenuItem value="low">
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#94a3b8' }} />
+                                  <Box>Low Priority</Box>
+                                </Stack>
+                              </MenuItem>
+                              <MenuItem value="normal">
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#3b82f6' }} />
+                                  <Box>Normal</Box>
+                                </Stack>
+                              </MenuItem>
+                              <MenuItem value="high">
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                                  <Box>High Priority</Box>
+                                </Stack>
+                              </MenuItem>
+                              <MenuItem value="urgent">
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                                  <Box>Urgent / Critical</Box>
+                                </Stack>
+                              </MenuItem>
+                            </Select>
+                          </FormControl>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', flex: { sm: 1 }, textAlign: { xs: 'center', sm: 'left' } }}>
+                            Urgent announcements will be highlighted with red danger accents for students.
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    </Stack>
+                    
+                    <Divider sx={{ my: 4 }} />
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button 
+                        variant="contained" 
+                        size="large"
+                        startIcon={<CampaignRoundedIcon />}
+                        onClick={createAnnouncement}
+                        disabled={!announcementForm.title || !announcementForm.message}
+                        sx={{ 
+                          borderRadius: '12px', 
+                          px: 4, 
+                          py: 1.5,
+                          background: 'linear-gradient(135deg, #7c3aed, #4c1d95)',
+                          boxShadow: '0 8px 16px rgba(124, 58, 237, 0.25)',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #6d28d9, #4338ca)',
+                            boxShadow: '0 12px 20px rgba(124, 58, 237, 0.4)',
+                            transform: 'translateY(-2px)'
+                          },
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        }}
+                      >
+                        Publish Announcement
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Stack>
+            </Box>
           )}
 
           {page === 'profile' && (
@@ -1864,116 +2066,225 @@ export default function App() {
         </Container>
       </Box>
 
-      <Dialog open={eventDialogOpen} onClose={() => setEventDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Box>
-              <Typography variant="h6">{selectedEvent?.title}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{selectedEvent?.category}</Typography>
-            </Box>
-            <Chip label={selectedEvent?.status} sx={{ textTransform: 'capitalize' }} />
-          </Stack>
-        </DialogTitle>
-        <DialogContent dividers>
-          {selectedEvent && (
-            <Stack spacing={2}>
-              <Typography color="text.secondary">{selectedEvent.description || 'No description available.'}</Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                <Chip icon={<AccessTimeRoundedIcon />} label={`${dayjs(selectedEvent.date).format('DD MMM YYYY')} · ${dayjs(`2000-01-01 ${selectedEvent.time}`).format('hh:mm A')}`} />
-                <Chip icon={<LocationOnRoundedIcon />} label={selectedEvent.venue} />
-                <Chip icon={<GroupsRoundedIcon />} label={`${selectedEvent.registered_count}/${selectedEvent.capacity}`} />
-              </Stack>
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* ═══ ENHANCED EVENT DETAIL DIALOG ═══ */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <Dialog
+        open={eventDialogOpen}
+        onClose={() => setEventDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '20px', overflow: 'hidden' } }}
+      >
+        {selectedEvent && (() => {
+          const evCategory = CATEGORY_CONFIG[selectedEvent.category] || CATEGORY_CONFIG.Other;
+          const evCapPct = Math.min(100, Math.round(((selectedEvent.registered_count || 0) / (selectedEvent.capacity || 1)) * 100));
+          const evCapColor = evCapPct >= 90 ? '#ef4444' : evCapPct >= 70 ? '#f59e0b' : '#10b981';
+          const avgRating = selectedEvent.feedback?.length
+            ? (selectedEvent.feedback.reduce((s, f) => s + f.rating, 0) / selectedEvent.feedback.length).toFixed(1)
+            : null;
+          return (
+            <>
+              {/* ── Gradient Header ── */}
+              <Box sx={{
+                p: 3,
+                background: `linear-gradient(135deg, ${evCategory.color}, #0f172a)`,
+                color: '#fff',
+                position: 'relative',
+                overflow: 'hidden',
+                minHeight: 140,
+              }}>
+                <Box sx={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.06)' }} />
+                <Box sx={{ position: 'absolute', bottom: -25, left: '40%', width: 100, height: 100, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ flex: 1, mr: 2 }}>
+                    <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+                      <Chip label={selectedEvent.status} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.22)', color: '#fff', textTransform: 'capitalize', fontWeight: 600 }} />
+                      <Chip label={selectedEvent.category} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', textTransform: 'capitalize' }} />
+                    </Stack>
+                    <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2, mb: 0.5 }}>
+                      {selectedEvent.title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.7, mt: 0.5 }}>
+                      Created by {selectedEvent.organizer_name || 'Organizer'}
+                    </Typography>
+                  </Box>
+                  <Typography variant="h2" sx={{ fontSize: '3rem', opacity: 0.9 }}>{evCategory.icon}</Typography>
+                </Stack>
+              </Box>
 
-              {(user.role === 'admin' || user.role === 'organizer') && (
-                <>
-                  <Divider />
-                  <Typography variant="subtitle1">Registered Students</Typography>
-                  <Stack spacing={1}>
-                    {(selectedEvent.registrations || []).length > 0 ? (
-                      selectedEvent.registrations.map((r) => (
-                        <Paper key={r.id} variant="outlined" sx={{ p: 1.25 }}>
-                          <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
-                            spacing={1}
-                            justifyContent="space-between"
-                            alignItems={{ sm: 'center' }}
-                          >
-                            <Box>
-                              <Button
-                                variant="text"
-                                sx={{ px: 0, minWidth: 0, textTransform: 'none', fontWeight: 600 }}
-                                onClick={() => openStudentDetails(r)}
-                              >
-                                {r.full_name}
-                              </Button>
-                              <Typography variant="body2" color="text.secondary">{r.email}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {r.department || 'Department not set'}{r.year ? ` · ${r.year}` : ''}
-                              </Typography>
+              {/* ── Info Cards Row ── */}
+              <Box sx={{ px: 3, py: 2, background: 'rgba(0,0,0,0.02)' }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
+                  <Paper elevation={0} sx={{ p: 2, borderRadius: '14px', border: '1px solid rgba(20,47,86,0.08)', textAlign: 'center' }}>
+                    <AccessTimeRoundedIcon sx={{ color: '#006D77', fontSize: 28, mb: 0.5 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      {dayjs(selectedEvent.date).format('ddd, DD MMM YYYY')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {dayjs(`2000-01-01 ${selectedEvent.time}`).format('hh:mm A')}
+                    </Typography>
+                  </Paper>
+                  <Paper elevation={0} sx={{ p: 2, borderRadius: '14px', border: '1px solid rgba(20,47,86,0.08)', textAlign: 'center' }}>
+                    <LocationOnRoundedIcon sx={{ color: '#006D77', fontSize: 28, mb: 0.5 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      {selectedEvent.venue}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Venue</Typography>
+                  </Paper>
+                  <Paper elevation={0} sx={{ p: 2, borderRadius: '14px', border: '1px solid rgba(20,47,86,0.08)', textAlign: 'center' }}>
+                    <GroupsRoundedIcon sx={{ color: evCapColor, fontSize: 28, mb: 0.5 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: evCapColor }}>
+                      {selectedEvent.registered_count} / {selectedEvent.capacity}
+                    </Typography>
+                    <LinearProgress variant="determinate" value={evCapPct} sx={{ mt: 0.5, height: 5, borderRadius: 4, bgcolor: `${evCapColor}18`, '& .MuiLinearProgress-bar': { bgcolor: evCapColor, borderRadius: 4 } }} />
+                    <Typography variant="caption" color="text.secondary">{evCapPct}% filled</Typography>
+                  </Paper>
+                </Box>
+              </Box>
+
+              <DialogContent sx={{ px: 3, py: 2.5 }}>
+                <Stack spacing={3}>
+                  {/* Description */}
+                  <Box>
+                    <Typography variant="overline" sx={{ color: 'text.disabled', letterSpacing: 1.5, fontSize: '0.65rem' }}>ABOUT THIS EVENT</Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.7 }}>
+                      {selectedEvent.description || 'No description provided for this event.'}
+                    </Typography>
+                  </Box>
+
+                  {/* Registered Students */}
+                  {(user.role === 'admin' || user.role === 'organizer') && (
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                        <Typography variant="overline" sx={{ color: 'text.disabled', letterSpacing: 1.5, fontSize: '0.65rem' }}>
+                          REGISTERED STUDENTS
+                        </Typography>
+                        <Chip label={`${(selectedEvent.registrations || []).length} registered`} size="small" sx={{ bgcolor: 'rgba(0,109,119,0.08)', color: '#006D77', fontWeight: 700 }} />
+                      </Stack>
+                      {(selectedEvent.registrations || []).length > 0 ? (
+                        <Stack spacing={1}>
+                          {selectedEvent.registrations.map((r) => (
+                            <Paper key={r.id} elevation={0} sx={{ p: 1.5, borderRadius: '12px', border: '1px solid rgba(20,47,86,0.08)', transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,109,119,0.03)', borderColor: 'rgba(0,109,119,0.15)' } }}>
+                              <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
+                                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                                  <Avatar sx={{ width: 36, height: 36, bgcolor: r.avatar_color || '#0A9396', fontSize: '0.85rem', fontWeight: 700 }}>{r.full_name?.charAt(0)}</Avatar>
+                                  <Box sx={{ minWidth: 0 }}>
+                                    <Button variant="text" sx={{ px: 0, minWidth: 0, textTransform: 'none', fontWeight: 700, fontSize: '0.9rem' }} onClick={() => openStudentDetails(r)}>
+                                      {r.full_name}
+                                    </Button>
+                                    <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                                      {r.email} • {r.department || 'N/A'}{r.year ? ` · ${r.year}` : ''}
+                                    </Typography>
+                                  </Box>
+                                </Stack>
+                                <Chip
+                                  label={r.status || 'confirmed'}
+                                  size="small"
+                                  sx={{
+                                    textTransform: 'capitalize', fontWeight: 600, borderRadius: '8px',
+                                    bgcolor: r.status === 'cancelled' ? 'rgba(239,68,68,0.1)' : r.status === 'attended' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)',
+                                    color: r.status === 'cancelled' ? '#ef4444' : r.status === 'attended' ? '#10b981' : '#3b82f6',
+                                  }}
+                                />
+                              </Stack>
+                            </Paper>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Paper elevation={0} sx={{ p: 3, borderRadius: '14px', border: '1px dashed rgba(20,47,86,0.15)', textAlign: 'center' }}>
+                          <Typography sx={{ fontSize: '2rem', mb: 0.5 }}>👤</Typography>
+                          <Typography color="text.secondary">No registrations yet. Share your event to get students to sign up!</Typography>
+                        </Paper>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Reviews Section */}
+                  <Box>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                      <Typography variant="overline" sx={{ color: 'text.disabled', letterSpacing: 1.5, fontSize: '0.65rem' }}>REVIEWS & FEEDBACK</Typography>
+                      {avgRating && (
+                        <Chip
+                          label={`⭐ ${avgRating} / 5 (${selectedEvent.feedback.length} review${selectedEvent.feedback.length > 1 ? 's' : ''})`}
+                          size="small"
+                          sx={{ bgcolor: 'rgba(245,158,11,0.1)', color: '#f59e0b', fontWeight: 700 }}
+                        />
+                      )}
+                    </Stack>
+                    <Stack spacing={1}>
+                      {(selectedEvent.feedback || []).map((f) => (
+                        <Paper key={f.id} elevation={0} sx={{ p: 1.5, borderRadius: '12px', border: '1px solid rgba(20,47,86,0.08)' }}>
+                          <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: f.avatar_color, fontSize: '0.8rem', fontWeight: 700 }}>{f.full_name.charAt(0)}</Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <Typography variant="body2" fontWeight={700}>{f.full_name}</Typography>
+                                <Typography variant="caption" sx={{ color: '#f59e0b' }}>{'★'.repeat(f.rating)}<span style={{ color: '#e5e7eb' }}>{'★'.repeat(5 - f.rating)}</span></Typography>
+                              </Stack>
+                              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>{f.comment || 'No comment'}</Typography>
                             </Box>
-                            <Chip
-                              label={r.status || 'confirmed'}
-                              size="small"
-                              color={r.status === 'cancelled' ? 'default' : 'success'}
-                              sx={{ textTransform: 'capitalize' }}
-                            />
                           </Stack>
                         </Paper>
-                      ))
-                    ) : (
-                      <Typography color="text.secondary">No student registrations yet.</Typography>
-                    )}
-                  </Stack>
-                </>
-              )}
-
-              <Divider />
-
-              <Typography variant="subtitle1">Reviews</Typography>
-              <Stack spacing={1}>
-                {(selectedEvent.feedback || []).map((f) => (
-                  <Paper key={f.id} variant="outlined" sx={{ p: 1.2 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <Avatar sx={{ width: 28, height: 28, bgcolor: f.avatar_color }}>{f.full_name.charAt(0)}</Avatar>
-                      <Typography variant="body2" fontWeight={700}>{f.full_name}</Typography>
-                      <Typography variant="caption" color="text.secondary">{'★'.repeat(f.rating)}{'☆'.repeat(5 - f.rating)}</Typography>
+                      ))}
+                      {!selectedEvent.feedback?.length && (
+                        <Paper elevation={0} sx={{ p: 3, borderRadius: '14px', border: '1px dashed rgba(20,47,86,0.15)', textAlign: 'center' }}>
+                          <Typography sx={{ fontSize: '2rem', mb: 0.5 }}>💬</Typography>
+                          <Typography color="text.secondary">No reviews yet. Be the first to share your experience!</Typography>
+                        </Paper>
+                      )}
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">{f.comment || 'No comment'}</Typography>
-                  </Paper>
-                ))}
-                {!selectedEvent.feedback?.length && <Typography color="text.secondary">No feedback yet.</Typography>}
-              </Stack>
+                  </Box>
 
-              {user.role === 'student' && (
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Leave Feedback</Typography>
-                  <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Tooltip title={`${n} star${n > 1 ? 's' : ''}`} key={n}>
-                        <IconButton color={n <= rating ? 'warning' : 'default'} onClick={() => setRating(n)}>
-                          <StarRoundedIcon />
-                        </IconButton>
-                      </Tooltip>
-                    ))}
-                  </Stack>
-                  <TextField fullWidth multiline minRows={2} placeholder="Write your review..." value={comment} onChange={(e) => setComment(e.target.value)} />
-                  <Button sx={{ mt: 1 }} variant="contained" onClick={submitFeedback}>Submit Feedback</Button>
-                </Box>
-              )}
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          {user.role === 'admin' && selectedEvent && (
-            <Button color="error" onClick={() => deleteEvent(selectedEvent.id)}>Delete Event</Button>
-          )}
-          {user.role === 'student' && selectedEvent && (
-            myEventRegs.some((e) => e.id === selectedEvent.id)
-              ? <Button color="error" variant="outlined" onClick={() => cancelRegistration(selectedEvent.id)}>Cancel Registration</Button>
-              : <Button variant="contained" onClick={() => registerForEvent(selectedEvent.id)} disabled={(selectedEvent.registered_count || 0) >= selectedEvent.capacity}>Register</Button>
-          )}
-          <Button onClick={() => setEventDialogOpen(false)}>Close</Button>
-        </DialogActions>
+                  {/* Leave Feedback (Students) */}
+                  {user.role === 'student' && (
+                    <Box sx={{ p: 2.5, borderRadius: '16px', border: '1px solid rgba(20,47,86,0.08)', bgcolor: 'rgba(0,109,119,0.02)' }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700 }}>✍️ Leave Your Feedback</Typography>
+                      <Stack direction="row" spacing={0.5} sx={{ mb: 1.5 }}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Tooltip title={`${n} star${n > 1 ? 's' : ''}`} key={n}>
+                            <IconButton
+                              onClick={() => setRating(n)}
+                              sx={{
+                                color: n <= rating ? '#f59e0b' : '#d1d5db',
+                                transition: 'all 0.2s',
+                                '&:hover': { transform: 'scale(1.2)', color: '#f59e0b' },
+                              }}
+                            >
+                              <StarRoundedIcon />
+                            </IconButton>
+                          </Tooltip>
+                        ))}
+                      </Stack>
+                      <TextField fullWidth multiline minRows={2} placeholder="Share your experience with this event..." value={comment} onChange={(e) => setComment(e.target.value)} sx={{ mb: 1 }} />
+                      <Button variant="contained" onClick={submitFeedback} sx={{ background: 'linear-gradient(135deg, #006D77, #0A9396)', '&:hover': { background: 'linear-gradient(135deg, #005f68, #089096)' } }}>Submit Feedback</Button>
+                    </Box>
+                  )}
+                </Stack>
+              </DialogContent>
+
+              {/* ── Dialog Actions ── */}
+              <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(20,47,86,0.08)' }}>
+                {user.role === 'admin' && (
+                  <Button
+                    color="error"
+                    variant="outlined"
+                    onClick={() => deleteEvent(selectedEvent.id)}
+                    sx={{ borderRadius: '10px', mr: 'auto' }}
+                  >
+                    Delete Event
+                  </Button>
+                )}
+                {user.role === 'student' && (
+                  myEventRegs.some((e) => e.id === selectedEvent.id)
+                    ? <Button color="error" variant="outlined" onClick={() => cancelRegistration(selectedEvent.id)} sx={{ borderRadius: '10px', mr: 'auto' }}>Cancel Registration</Button>
+                    : <Button variant="contained" onClick={() => registerForEvent(selectedEvent.id)} disabled={(selectedEvent.registered_count || 0) >= selectedEvent.capacity} sx={{ borderRadius: '10px', mr: 'auto', background: 'linear-gradient(135deg, #006D77, #0A9396)' }}>Register Now</Button>
+                )}
+                <Button onClick={() => setEventDialogOpen(false)} sx={{ borderRadius: '10px' }}>Close</Button>
+              </DialogActions>
+            </>
+          );
+        })()}
       </Dialog>
 
       <Dialog open={studentDialogOpen} onClose={() => setStudentDialogOpen(false)} maxWidth="sm" fullWidth>
