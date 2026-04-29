@@ -95,15 +95,15 @@ router.get('/:id', (req, res) => {
 // Create event (organizer/admin)
 router.post('/', authenticate, authorize('organizer', 'admin'), (req, res) => {
   try {
-    const { title, description, category, date, time, venue, capacity, image_url } = req.body;
+    const { title, description, category, date, time, venue, capacity, image_url, certificate_template } = req.body;
 
     if (!title || !category || !date || !time || !venue) {
       return res.status(400).json({ error: 'Title, category, date, time, and venue are required' });
     }
 
     const result = db.prepare(
-      'INSERT INTO events (title, description, category, date, time, venue, capacity, image_url, organizer_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(title, description, category, date, time, venue, capacity || 100, image_url, req.user.id);
+      'INSERT INTO events (title, description, category, date, time, venue, capacity, image_url, certificate_template, organizer_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(title, description, category, date, time, venue, capacity || 100, image_url, certificate_template, req.user.id);
 
     const event = db.prepare('SELECT * FROM events WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(event);
@@ -123,14 +123,14 @@ router.put('/:id', authenticate, authorize('organizer', 'admin'), (req, res) => 
       return res.status(403).json({ error: 'Not authorized to update this event' });
     }
 
-    const { title, description, category, date, time, venue, capacity, image_url, status } = req.body;
+    const { title, description, category, date, time, venue, capacity, image_url, certificate_template, status } = req.body;
 
     db.prepare(
-      'UPDATE events SET title=?, description=?, category=?, date=?, time=?, venue=?, capacity=?, image_url=?, status=? WHERE id=?'
+      'UPDATE events SET title=?, description=?, category=?, date=?, time=?, venue=?, capacity=?, image_url=?, certificate_template=?, status=? WHERE id=?'
     ).run(
       title || event.title, description || event.description, category || event.category,
       date || event.date, time || event.time, venue || event.venue,
-      capacity || event.capacity, image_url || event.image_url, status || event.status,
+      capacity || event.capacity, image_url !== undefined ? image_url : event.image_url, certificate_template !== undefined ? certificate_template : event.certificate_template, status || event.status,
       req.params.id
     );
 

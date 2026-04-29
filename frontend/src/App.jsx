@@ -333,6 +333,11 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width:900px)');
 
+  // Certificate states
+  const [certDialogOpen, setCertDialogOpen] = useState(false);
+  const [certStudentName, setCertStudentName] = useState('');
+  const [certGenerating, setCertGenerating] = useState(false);
+
   const nav = useMemo(() => getNav(user?.role), [user]);
 
   const eventCategories = useMemo(() => {
@@ -577,6 +582,93 @@ export default function App() {
       await refreshData();
     } catch (err) {
       showToast(err.message, 'error');
+    }
+  };
+
+  // ── Certificate Functions ──
+  const uploadCertificateTemplate = async (eventId, file) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result;
+        await apiCall(`/events/${eventId}`, 'PUT', { certificate_template: base64 }, token);
+        showToast('Certificate template uploaded!');
+        await refreshData();
+        if (selectedEvent?.id === eventId) openEvent(eventId);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const removeCertificateTemplate = async (eventId) => {
+    try {
+      await apiCall(`/events/${eventId}`, 'PUT', { certificate_template: '' }, token);
+      showToast('Certificate template removed', 'info');
+      await refreshData();
+      if (selectedEvent?.id === eventId) openEvent(eventId);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const generateCertificate = async () => {
+    if (!selectedEvent?.certificate_template || !certStudentName.trim()) {
+      showToast('Please enter your name', 'warning');
+      return;
+    }
+    setCertGenerating(true);
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = selectedEvent.certificate_template;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+
+      // Draw template
+      ctx.drawImage(img, 0, 0);
+
+      // Draw student name in the center
+      const fontSize = Math.max(36, Math.round(img.width / 20));
+      ctx.font = `bold ${fontSize}px "Georgia", "Times New Roman", serif`;
+      ctx.fillStyle = '#1a1a2e';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(certStudentName.trim(), img.width / 2, img.height * 0.48);
+
+      // Draw event name below
+      const smallFont = Math.max(20, Math.round(img.width / 35));
+      ctx.font = `${smallFont}px "Georgia", "Times New Roman", serif`;
+      ctx.fillStyle = '#444';
+      ctx.fillText(selectedEvent.title, img.width / 2, img.height * 0.58);
+
+      // Draw date
+      const tinyFont = Math.max(16, Math.round(img.width / 50));
+      ctx.font = `${tinyFont}px sans-serif`;
+      ctx.fillStyle = '#666';
+      ctx.fillText(`Date: ${dayjs(selectedEvent.date).format('DD MMMM YYYY')}`, img.width / 2, img.height * 0.66);
+
+      // Download
+      const link = document.createElement('a');
+      link.download = `Certificate_${certStudentName.trim().replace(/\s+/g, '_')}_${selectedEvent.title.replace(/\s+/g, '_')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      showToast('Certificate downloaded!');
+      setCertDialogOpen(false);
+      setCertStudentName('');
+    } catch (err) {
+      showToast('Failed to generate certificate', 'error');
+    } finally {
+      setCertGenerating(false);
     }
   };
 
@@ -2260,6 +2352,99 @@ export default function App() {
                       <Button variant="contained" onClick={submitFeedback} sx={{ background: 'linear-gradient(135deg, #006D77, #0A9396)', '&:hover': { background: 'linear-gradient(135deg, #005f68, #089096)' } }}>Submit Feedback</Button>
                     </Box>
                   )}
+
+                  {/* ── Certificate Section ── */}
+                  {/* Organizer/Admin: Upload certificate template */}
+                  {(user.role === 'admin' || user.role === 'organizer') && (
+                    <Box>
+                      <Typography variant="overline" sx={{ color: 'text.disabled', letterSpacing: 1.5, fontSize: '0.65rem', mb: 1.5, display: 'block' }}>CERTIFICATE TEMPLATE</Typography>
+                      {selectedEvent.certificate_template ? (
+                        <Paper elevation={0} sx={{ p: 2, borderRadius: '16px', border: '1px solid rgba(16,185,129,0.2)', bgcolor: 'rgba(16,185,129,0.04)' }}>
+                          <Stack spacing={2}>
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Box sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(16,185,129,0.1)' }}>
+                                <Typography sx={{ fontSize: '1.4rem' }}>🏆</Typography>
+                              </Box>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#059669' }}>Template Uploaded</Typography>
+                                <Typography variant="caption" color="text.secondary">Students can generate certificates for this event</Typography>
+                              </Box>
+                              <Button color="error" size="small" variant="outlined" sx={{ borderRadius: '8px' }} onClick={() => removeCertificateTemplate(selectedEvent.id)}>Remove</Button>
+                            </Stack>
+                            <Box sx={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', maxHeight: 200 }}>
+                              <img src={selectedEvent.certificate_template} alt="Certificate template" style={{ width: '100%', display: 'block', objectFit: 'contain', maxHeight: 200 }} />
+                            </Box>
+                          </Stack>
+                        </Paper>
+                      ) : (
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            borderRadius: '16px',
+                            border: '2px dashed rgba(20,47,86,0.15)',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s',
+                            '&:hover': { borderColor: '#7c3aed', bgcolor: 'rgba(124,58,237,0.03)' },
+                          }}
+                          onClick={() => document.getElementById('cert-template-upload').click()}
+                        >
+                          <Typography sx={{ fontSize: '2.5rem', mb: 1 }}>📜</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Upload Certificate Template</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Upload a certificate image (PNG/JPG). Students' names will be placed in the center.
+                          </Typography>
+                          <input
+                            id="cert-template-upload"
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) uploadCertificateTemplate(selectedEvent.id, e.target.files[0]);
+                              e.target.value = '';
+                            }}
+                          />
+                        </Paper>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Student: Get Certificate button */}
+                  {user.role === 'student' && selectedEvent.certificate_template && (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        borderRadius: '16px',
+                        background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(59,130,246,0.08))',
+                        border: '1px solid rgba(124,58,237,0.15)',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '2.5rem', mb: 1 }}>🎓</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>Certificate Available!</Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        You can generate and download your personalized certificate for this event.
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        onClick={() => { setCertStudentName(user.full_name); setCertDialogOpen(true); }}
+                        sx={{
+                          borderRadius: '12px',
+                          px: 4,
+                          py: 1.2,
+                          background: 'linear-gradient(135deg, #7c3aed, #3b82f6)',
+                          boxShadow: '0 6px 16px rgba(124,58,237,0.3)',
+                          '&:hover': { background: 'linear-gradient(135deg, #6d28d9, #2563eb)', transform: 'translateY(-2px)', boxShadow: '0 10px 20px rgba(124,58,237,0.4)' },
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        }}
+                      >
+                        🏆 Get Your Certificate
+                      </Button>
+                    </Paper>
+                  )}
                 </Stack>
               </DialogContent>
 
@@ -2355,6 +2540,106 @@ export default function App() {
           {toast.message}
         </Alert>
       </Snackbar>
+
+      {/* ═══ CERTIFICATE GENERATION DIALOG ═══ */}
+      <Dialog
+        open={certDialogOpen}
+        onClose={() => setCertDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '20px', overflow: 'hidden' } }}
+      >
+        {/* Gradient Header */}
+        <Box sx={{
+          p: 3,
+          background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 50%, #0f172a 100%)',
+          color: '#fff',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ position: 'absolute', top: -30, right: -20, width: 150, height: 150, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.06)' }} />
+          <Box sx={{ position: 'absolute', bottom: -40, left: '30%', width: 120, height: 120, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.04)' }} />
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ p: 1.5, borderRadius: '14px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <Typography sx={{ fontSize: '2rem' }}>🎓</Typography>
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>Generate Your Certificate</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.85 }}>{selectedEvent?.title}</Typography>
+            </Box>
+          </Stack>
+        </Box>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={3}>
+            {/* Name Input */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Your Full Name (as it will appear on the certificate)</Typography>
+              <TextField
+                fullWidth
+                placeholder="Enter your full name"
+                value={certStudentName}
+                onChange={(e) => setCertStudentName(e.target.value)}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontSize: '1.1rem' } }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Double-check spelling — this name will be printed on your certificate.
+              </Typography>
+            </Box>
+
+            {/* Template Preview */}
+            {selectedEvent?.certificate_template && (
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Certificate Preview</Typography>
+                <Paper elevation={0} sx={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(20,47,86,0.1)', position: 'relative' }}>
+                  <img
+                    src={selectedEvent.certificate_template}
+                    alt="Certificate preview"
+                    style={{ width: '100%', display: 'block' }}
+                  />
+                  {/* Name overlay preview */}
+                  <Box sx={{
+                    position: 'absolute',
+                    top: '45%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    textAlign: 'center',
+                    pointerEvents: 'none',
+                  }}>
+                    <Typography sx={{
+                      fontFamily: '"Georgia", "Times New Roman", serif',
+                      fontWeight: 700,
+                      fontSize: { xs: '1rem', sm: '1.4rem', md: '1.8rem' },
+                      color: '#1a1a2e',
+                      textShadow: '0 1px 4px rgba(255,255,255,0.8)',
+                    }}>
+                      {certStudentName || 'Your Name Here'}
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(20,47,86,0.08)' }}>
+          <Button onClick={() => setCertDialogOpen(false)} sx={{ borderRadius: '10px' }}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={generateCertificate}
+            disabled={!certStudentName.trim() || certGenerating}
+            sx={{
+              borderRadius: '12px',
+              px: 3,
+              background: 'linear-gradient(135deg, #7c3aed, #3b82f6)',
+              boxShadow: '0 6px 16px rgba(124,58,237,0.25)',
+              '&:hover': { background: 'linear-gradient(135deg, #6d28d9, #2563eb)' },
+            }}
+          >
+            {certGenerating ? 'Generating...' : '⬇️ Download Certificate'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

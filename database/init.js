@@ -36,6 +36,7 @@ db.exec(`
     venue TEXT NOT NULL,
     capacity INTEGER DEFAULT 100,
     image_url TEXT,
+    certificate_template TEXT,
     organizer_id INTEGER,
     status TEXT DEFAULT 'upcoming' CHECK(status IN ('upcoming','ongoing','completed','cancelled')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
